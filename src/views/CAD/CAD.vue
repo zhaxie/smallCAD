@@ -30,6 +30,11 @@ export default {
     openedFileBar,
     ruleTool,
   },
+  computed: {
+    count() {
+      return this.$storeCAD.state;
+    },
+  },
 };
 </script>
 
@@ -42,8 +47,6 @@ body,
 </style>
 
 <style lang="scss" scoped>
-
-.main-content{
-
+.main-content {
 }
 </style>

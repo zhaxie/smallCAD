@@ -4,7 +4,7 @@
       <div class="d-flex align-items-center">
         <button class="px-20 tool-btn" @click="$refs.inputFile.click();">选择平面图</button>
         <div class="col"></div>
-        <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">保存</button>
+        <button class="mx-5 px-20 tool-btn" @click="handleSave">保存</button>
         <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">打印</button>
         <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">导出</button>
       </div>
@@ -16,6 +16,10 @@
 
 <script>
 export default {
+  data() {
+    return {
+    }
+  },
   methods: {
     //上传文件
     async handleUploadFile(e) {
@@ -29,7 +33,12 @@ export default {
         });
       }
     },
+
+    handleSave() {
+
+    },
   },
+
 };
 </script>
 
