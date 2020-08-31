@@ -6,7 +6,7 @@
         class="pa-20 iconfont cursor-pointer"
         v-for="(item, index) in state.sideToolList"
         :key="'sideToolList' + index"
-        :class="{active: item.type === state.currentToolModelType, [item.icon]: item.icon}"
+        :class="{active: item.model === state.currentToolMode, [item.icon]: item.icon}"
         @click="$storeCAD.switchCurrentToolModel(item)"
       ></div>
     </div>

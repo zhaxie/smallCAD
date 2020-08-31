@@ -1,29 +1,70 @@
 export default {
     state: {
-        currentToolModelType: 0,
+        currentToolMode: null,
         sideToolList: [
             {
-                type: 0,
+                model: 'drawRect',
+                icon: "icon-rect",
+            },
+            {
+                model: 'drawStraightLine',
                 icon: "icon-zhixian",
             },
+            // {
+            //     icon: "icon-yuanhuxian",
+            // },
             {
-                type: 1,
-                icon: "icon-yuanhuxian",
-            },
-            {
-                type: 2,
+                model: 'drawCircular',
                 icon: "icon-yuan",
             },
         ],
-        ruleTool: {
-            currentModel: null,
+
+        currentUploadedImageInfo: {
+            name: '',
+            url: ''
+        },
+    },
+
+    //切换当前的工具模式
+    switchCurrentToolModel({ model }) {
+        this.state.currentToolMode = model;
+    },
+
+    //上传文件
+    handleUploadFile(e) {
+        try {
+            const file = e.target.files[0];
+            var imageType = /image.*/;
+
+            if (file.type.match(imageType)) {
+                var reader = new FileReader();
+
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    this.state.currentUploadedImageInfo.name = file.name;
+                    this.state.currentUploadedImageInfo.url = reader.result;
+                };
+            } else {
+                alert('图片格式有误');
+            }
+
+            console.info("this.state.currentFileList", this.state.currentFileList);
+
+
+        } catch (error) {
+            console.error('error', error);
+            alert(error);
         }
     },
-    //切换当前的工具模式
-    switchCurrentToolModel({ type }) {
-        this.state.currentToolModelType = type;
-    },
-    switchDrawReferLineModel(model){
-        this.state.ruleTool.currentModel = model;
+
+    //删除上传了的文件
+    removeUploadedImg() {
+        const isSureRemove = confirm('确定删除？');
+
+        if (isSureRemove === true) {
+            this.state.currentUploadedImageInfo.name = '';
+            this.state.currentUploadedImageInfo.url = '';
+        }
+
     }
 }

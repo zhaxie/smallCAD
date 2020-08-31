@@ -1,8 +1,12 @@
 <template>
   <div class="ma-5 openedFile-modules">
     <div class="d-flex align-items-center pa-5 file-list">
-      <div class="d-flex align-items-center mx-5 file-item">
-        <div class="col pl-10 text-over-one file-name">文件文件名文件名文件名名</div>
+      <div
+        class="d-flex align-items-center mx-5 file-item"
+        v-for="(item, index) in state.currentFileList"
+        :key="'currentFileList' + index"
+      >
+        <div class="col pl-10 text-over-one file-name">{{item.name}}</div>
         <div class="iconfont mx-10 icon-close remove-btn"></div>
       </div>
     </div>
@@ -10,7 +14,13 @@
 </template>
 
 <script>
-export default {};
+export default {
+  data() {
+    return {
+      state: this.$storeCAD.state,
+    };
+  },
+};
 </script>
 
 <style lang="scss" scoped>
@@ -30,8 +40,8 @@ export default {};
         color: #333;
       }
 
-      .icon-close{
-          color:  #999;
+      .icon-close {
+        color: #999;
       }
     }
   }
