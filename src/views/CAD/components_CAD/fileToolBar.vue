@@ -9,7 +9,10 @@
         >选择平面图</button>
         <div class="d-flex align-items-center px-20 select-file-btn" v-else>
           <div>{{state.currentUploadedImageInfo.name}}</div>
-          <div class="pl-10 iconfont icon-close cursor-pointer" @click="handleRemoveUploadedFile();"></div>
+          <div
+            class="pl-10 iconfont icon-close cursor-pointer"
+            @click="handleRemoveUploadedFile();"
+          ></div>
         </div>
         <div class="col"></div>
         <button class="mx-5 px-20 tool-btn" @click="handleSave">保存</button>
@@ -32,10 +35,31 @@ export default {
   },
   methods: {
     handleUploadFile(e) {
-      this.$storeCAD.handleUploadFile(e);
+      try {
+        const file = e.target.files[0];
+        var imageType = /image.*/;
+
+        if (file.type.match(imageType)) {
+          var reader = new FileReader();
+
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+
+            this.$bus_unique.emit("choosedLocalImage", {
+              name: file.name,
+              url: reader.result
+            });
+          };
+        } else {
+          alert("图片格式有误");
+        }
+      } catch (error) {
+        console.error("error", error);
+        alert(error);
+      }
     },
 
-    handleRemoveUploadedFile(){
+    handleRemoveUploadedFile() {
       this.$storeCAD.removeUploadedImg();
     },
 

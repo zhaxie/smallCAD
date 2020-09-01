@@ -1,523 +1,345 @@
 <template>
-  <div
-    class="position-relative rule-modules"
-    @mousedown="mainContentEvt_onMouseDown($event)"
-    @mousemove="mainContentEvt_onMouseMove($event)"
-    @mouseup="mainContentEvt_onMouseUp($event)"
-  >
-    <!-- 模块：刻度尺 + 参考线 -->
-    <template v-if="ruleInfo">
-      <!-- 刻度尺：x轴 -->
-      <div
-        class="position-sticky z100 d-flex align-items-center cursor-pointer rule x-rule"
-        ref="xRule"
-        @mousedown="editModelListObj.drawReferLine.beginDraw('xAxis');"
-      >
-        <div
-          class="position-relative flex-shrink-0 rule-item"
-          v-for="(item, index) in ruleInfo.xAxis.itemNumber"
-          :key="'x' + index"
-        >
-          <div class="pl-5 number">{{50 * index}}</div>
-          <div class="position-absolute mark-line-modules">
-            <div class="position-relative h-100">
-              <div
-                class="position-absolute mark-item"
-                v-for="(item, index) in 9"
-                :key="index"
-                :style="{left: (index + 1) * 10 + '%', height: (index + 1) % 2 !== 0 ? '70%' : '100%'}"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 刻度尺：y轴 -->
-      <div
-        class="position-sticky z100 y-rule"
-        ref="yRule"
-        @mousedown="editModelListObj.drawReferLine.beginDraw('yAxis');"
-      >
-        <div class="position-relative rule-item" v-for="(item, index) in ruleInfo.yAxis.itemNumber" :key="'y' + index">
-          <div class="pl-5 number">{{50 * index}}</div>
-          <div class="position-absolute mark-line-modules">
-            <div class="position-relative h-100">
-              <div
-                class="position-absolute mark-item"
-                v-for="(item, index) in 9"
-                :key="index"
-                :style="{top: (index + 1) * 10 + '%', width: (index + 1) % 2 !== 0 ? '70%' : '100%'}"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 参考线 -->
-      <!-- x轴 -->
-      <div
-        class="position-absolute cursor-pointer reference-line xAxis"
-        v-for="(item, index) in referLineObj.xAxis"
-        :key="'referLineObjxAxis' + index"
-        :style="{top: item.posVal + 'px'}"
-        :class="{active: item.isSelected == true}"
-        @mousedown="editModelListObj.drawReferLine.beginDraw('xAxis', item)"
-      ></div>
-      <!-- y轴 -->
-      <div
-        class="position-absolute cursor-pointer reference-line yAxis"
-        v-for="(item, index) in referLineObj.yAxis"
-        :key="'referLineObjyAxis' + index"
-        :style="{left: item.posVal + 'px' }"
-        :class="{active: item.isSelected == true}"
-        @mousedown="editModelListObj.drawReferLine.beginDraw('yAxis', item)"
-      ></div>
-    </template>
-
-    <!-- 模块：绘制矩形框框 -->
-    <template>
-      <canvas
-        class="position-absolute z100 draw-rect-modules"
-        v-for="(item, index) in rectObj.list"
-        :key="index"
-        :style="{left: item.left + 'px', top: item.top + 'px',  width: item.width + 'px', height: item.height + 'px'}"
-      ></canvas>
-    </template>
-
-    <!-- 模块：图片 -->
-    <template v-if="state.currentUploadedImageInfo.url">
-      <div
-        class="position-absolute image-modules"
-        :style="{left: axis.originPoint.rule.width + 'px', top: axis.originPoint.rule.height + 'px'}"
-      >
-        <img class="d-block" :src="state.currentUploadedImageInfo.url" alt ref="uploadedImageInfo" />
-      </div>
-    </template>
-  </div>
+  <canvas
+    class="w-100 h-100 canvas-box"
+    ref="canvasBox"
+    @mousedown="canvasEvt('mouseDown', $event)"
+    @mousemove="canvasEvt('mouseMove', $event)"
+    @mousemup="canvasEvt('mouseUp', $event)"
+  ></canvas>
 </template>
 
 <script>
 export default {
   data() {
     return {
-      //绘图：参考线
-      referLineObj: {
-        xAxis: [],
-        yAxis: [],
-        activeAxis: null,
-      },
-
-      //绘图：矩形
-      rectObj: {
-        list: [],
-      },
-
-      //标尺信息
-      ruleInfo: null,
-
-      //坐标轴
-      axis: {
-        originPoint: {
-          rule: {
-            width: 0,
-            height: 0,
-          },
-        },
-      },
       state: this.$storeCAD.state,
     };
   },
-  watch: {
-    "state.currentUploadedImageInfo.url"(newValue) {
-      if (newValue) {
-        setTimeout(() => {
-          const imageClient = this.$refs.uploadedImageInfo.getBoundingClientRect();
-          console.info("imageClient", imageClient);
-
-          this.ruleInfo = {
-            xAxis: {
-              width: imageClient.width,
-              itemNumber: Math.floor(imageClient.width / 50),
-            },
-            yAxis: {
-              height: imageClient.height,
-              itemNumber: Math.floor(imageClient.height / 50),
-            },
-          };
-        }, 300);
-      }
-    },
-  },
   mounted() {
-    // this.init();
+    this.init();
+
+    //监听：选择本地图片
+    this.$bus_unique.on("choosedLocalImage", "ruleTool", async (choosedImg) => {
+      try {
+        let initInfo = this.initInfo;
+        const { ctx, canvasClient } = initInfo;
+
+        //处理一下选择的图片的尺寸，使之能填充在canvas容器里
+        let imgInfo = await this.transImg(canvasClient, choosedImg);
+
+        imgInfo.x = (canvasClient.width - imgInfo.width) / 2;
+        imgInfo.y = (canvasClient.height - imgInfo.height) / 2;
+
+        imgInfo.coords = this.getRectCoords(imgInfo); //获取图像的坐标群
+
+        initInfo.targetImg = imgInfo; //目标图像
+
+        console.info("imgInfo", imgInfo);
+
+        //将图片填充到画布的中心
+        await this.fillImgInCanvasCenter({ ctx, imgInfo });
+      } catch (error) {
+        this.$catchError(error);
+      }
+    });
+
+    // 监听：切换工具（侧边栏）
+    this.$bus_unique.on("switchTool", "ruleTool", ({ model }) => {
+      this.currentToolModel = model;
+
+      switch (model) {
+        case "drawRect":
+          console.info("切换到绘制矩形");
+
+          break;
+      }
+    });
+
+    //测试操作
+    this.$nextTick(() => {
+      this.$bus_unique.emit("choosedLocalImage", {
+        name: "测试图片",
+        url:
+          "https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=697983060,2693531260&fm=15&gp=0.jpg",
+      });
+
+      this.$bus_unique.emit("switchTool", {
+        model: "drawRect",
+      });
+    });
   },
   methods: {
     async init() {
-      this.axis = await this.initAxis(); //初始化坐标轴
-      this.editModelListObj = await this.initEditModels(); //初始化各种编辑模式
+      try {
+        const $canvasBox = this.$refs.canvasBox;
+
+        const ctx = $canvasBox.getContext("2d");
+        const canvasClient = $canvasBox.getBoundingClientRect();
+
+        $canvasBox.width = canvasClient.width;
+        $canvasBox.height = canvasClient.height;
+
+        await this.$nextTick(() => {
+          this.initInfo = {
+            ctx: ctx,
+            canvasClient: canvasClient, //画布位置信息
+          };
+          this.toolEvts = this.getToolEvts();
+        });
+      } catch (error) {
+        this.$catchError(error);
+      }
     },
 
-    //初始化坐标轴
-    initAxis() {
-      const _$refs = this.$refs;
-
-      const xRuleRect = _$refs.xRule.getBoundingClientRect();
-      const yRuleRect = _$refs.yRule.getBoundingClientRect();
-
-      console.info("xRuleRect", xRuleRect);
-      console.info("yRuleRect", yRuleRect);
-
-      return {
-        //坐标轴原点
-        originPoint: {
-          x: yRuleRect.left + yRuleRect.width,
-          y: xRuleRect.top + xRuleRect.height,
-          top: xRuleRect.top,
-          left: yRuleRect.left,
-          height: xRuleRect.height,
-          width: yRuleRect.height,
-          rule: {
-            width: yRuleRect.width,
-            height: xRuleRect.height,
-          },
-        },
-      };
-    },
-
-    //初始化各种编辑模式
-    initEditModels() {
+    //获取工具栏的事件
+    getToolEvts() {
       let _data = {};
+      let { ctx, targetImg } = this.initInfo;
 
-      const _originPoint = this.axis.originPoint;
-
-      const editModels = {
-        //绘制: 参考线
-        drawReferLine: {
-          beginDraw: (axisType, thisReferLineObj) => {
-            let _referLineObj = this.referLineObj;
-            let currentReferLineList = _referLineObj[axisType];
-
-            _data.isDrawing = true;
-            this.state.currentToolMode = "drawReferLine"; //当前模式：绘制参考线
-
-            //去除上一个被操作的参考线的选中样式
-            if (_data.currentEditReferLineObj) {
-              _data.currentEditReferLineObj.isSelected = false;
-            }
-
-            if (thisReferLineObj) {
-              console.info("模式：移动参考线");
-
-              thisReferLineObj.isSelected = true; //选中当前的参考线
-              _data.currentEditReferLineObj = thisReferLineObj; //更新当前操作的参考线
-
-              _data.isMovedMouse = false; //记录鼠标是否被移动过，用于onMouseUp时，判断是点击参考线，还是移动参考线
-            } else {
-              console.info("模式：创建参考线");
-
-              _data.currentEditReferLineObj = {
-                isSelected: true, //注意：是否被选中，这个必须写进去，不然vue无法跟踪到它的数据变化
-                posVal: 0, //参考线的初试位置
-              };
-              currentReferLineList.push(_data.currentEditReferLineObj);
-            }
-
-            _data.currentAxisType = axisType;
-
-            console.info("currentReferLineList", currentReferLineList);
-          },
-          onMouseMove: ($event) => {
-            if (!_data.isDrawing) {
-              return false;
-            }
-
-            let currentAxisType = _data.currentAxisType;
-            let startDis;
-            let endDis;
-
-            switch (currentAxisType) {
-              case "xAxis":
-                startDis = _originPoint.top;
-                endDis = $event.pageY;
-                break;
-              case "yAxis":
-                startDis = _originPoint.left;
-                endDis = $event.pageX;
-                break;
-            }
-
-            _data.currentEditReferLineObj.posVal = endDis - startDis;
-            _data.isMovedMouse = true;
-          },
-          onMouseUp: ($event) => {
-            _data.isDrawing = false;
-
-            let currentAxisType = _data.currentAxisType;
-            let safeVal; //安全值，小于这个值，就作废
-
-            switch (currentAxisType) {
-              case "xAxis":
-                safeVal = _originPoint.height;
-                break;
-              case "yAxis":
-                safeVal = _originPoint.left;
-                break;
-            }
-
-            //如果参考线在标尺的位置范围内，则作废，删除
-            if (_data.currentEditReferLineObj.posVal <= safeVal) {
-              this.referLineObj[currentAxisType].pop();
-            } else {
-              const isMovedMouse = _data.isMovedMouse;
-
-              _data.currentEditReferLineObj.isSelected = !isMovedMouse; //取消选中的状态
-            }
-          },
-        },
-
-        //绘制：矩形
+      const toolEvts = {
         drawRect: {
           onMouseDown: ($event) => {
-            console.info("$event", $event);
+            console.info("开始绘制矩形", "");
+            _data.startCoord = [$event.offsetX, $event.offsetY];
 
-            _data.isDrawing = true;
-
-            //保存鼠标按下的坐标
-            _data.mouseDownPoint = {
-              x: $event.pageX,
-              y: $event.pageY,
-            };
-
-            //创建一个新的矩形
-            const currentRect = {
-              left: $event.pageX - _originPoint.left,
-              top: $event.pageY - _originPoint.top,
-              width: 0,
-              height: 0,
-            };
-            _data.currentRect = currentRect;
-
-            console.info("this.rectObj", this.rectObj);
-
-            this.rectObj.list.push(currentRect);
+            ctx.fillStyle = "#0000ff";
+            _data.isBeginDrawRect = true;
           },
           onMouseMove: ($event) => {
-            if (!_data.isDrawing) {
-              return false;
-            }
+            let { startCoord, isBeginDrawRect, lastRect } = _data;
 
-            let { x: mouseDown_x, y: mouseDown_y } = _data.mouseDownPoint;
-            let { pageX, pageY } = $event;
+            if (!isBeginDrawRect) return false;
 
-            let currentRect = {};
-            let moveDirection;
+            lastRect &&
+              ctx.clearRect(lastRect.x, lastRect.y, lastRect.w, lastRect.h);
 
-            let axisObj = {
-              width: pageX - mouseDown_x,
-              height: pageY - mouseDown_y,
+            const currentRect = {
+              x: startCoord[0],
+              y: startCoord[1],
+              w: $event.offsetX - startCoord[0],
+              h: $event.offsetY - startCoord[1],
             };
 
-            if (axisObj.width < 0 && axisObj.height < 0) {
-              moveDirection = "左上";
+            ctx.strokeRect(
+              currentRect.x,
+              currentRect.y,
+              currentRect.w,
+              currentRect.h
+            );
 
-              _data.currentRect.left = pageX - _originPoint.left;
-              _data.currentRect.top = pageY - _originPoint.top;
-              _data.currentRect.width = mouseDown_x - pageX;
-              _data.currentRect.height = mouseDown_y - pageY;
-            } else if (axisObj.width > 0 && axisObj.height < 0) {
-              moveDirection = "右上";
+            _data.lastRect = currentRect;
 
-              _data.currentRect.top = pageY - _originPoint.top;
-              _data.currentRect.width = pageX - mouseDown_x;
-              _data.currentRect.height = mouseDown_y - pageY;
-            } else if (axisObj.width < 0 && axisObj.height > 0) {
-              moveDirection = "左下";
+            console.info("lastRect", lastRect);
 
-              _data.currentRect.left = pageX - _originPoint.left;
-              _data.currentRect.width = mouseDown_x - pageX;
-              _data.currentRect.height = pageY - mouseDown_y;
-            } else if (axisObj.width > 0 && axisObj.height > 0) {
-              moveDirection = "右下";
-
-              _data.currentRect.width = pageX - mouseDown_x;
-              _data.currentRect.height = pageY - mouseDown_y;
-            }
-
-            console.info("moveDirection", moveDirection);
-
-            // //跟踪：x轴
-            // if (mouseDown_x - pageX >= _originPoint.x) {
-            //   _data.currentRect.left = pageX - _originPoint.left;
-            //   _data.currentRect.width = mouseDown_x - pageX;
-            // } else {
-            //   _data.currentRect.width = pageX - mouseDown_x;
-            // }
-
-            // // // 跟踪：y轴
-            // if (mouseDown_y - pageY >= _originPoint.y) {
-            //   _data.currentRect.top = pageY - _originPoint.top;
-            //   _data.currentRect.height = mouseDown_y - pageY;
-            // } else {
-            //   _data.currentRect.height = pageY - mouseDown_y;
-            // }
+            // ctx.rect(
+            //   startCoord[0],
+            //   startCoord[1],
+            //   $event.offsetX - startCoord[0],
+            //   $event.offsetY - startCoord[1]
+            // );
           },
-          onMouseUp: ($event) => {
-            _data.isDrawing = false;
-
-            console.info("$event", $event);
+          onMouseUp: () => {
+            _data.isBeginDrawRect = false;
+            ctx.stroke();
           },
         },
       };
 
-      return editModels;
+      return toolEvts;
     },
 
-    // 主区域事件：鼠标按下
-    mainContentEvt_onMouseDown($event) {
-      const currentToolMode = this.state.currentToolMode;
+    //画布事件
+    canvasEvt(evtName, $event) {
+      try {
+        const { targetImg } = this.initInfo;
+        const currentPointer = [$event.offsetX, $event.offsetY];
 
-      if (currentToolMode === null) {
-        return false;
+        if (!targetImg) {
+          return false;
+        }
+
+        //是否有效点击（必须在底层图像上）
+        const isInTargetImg = this.isInPolygon(
+          currentPointer,
+          targetImg.coords
+        );
+
+        if (isInTargetImg === false) return false;
+
+        const currentToolModel = this.currentToolModel;
+        const currentTool = this.toolEvts[currentToolModel];
+
+        switch (evtName) {
+          case "mouseDown":
+            currentTool.onMouseDown($event);
+            break;
+          case "mouseMove":
+            currentTool.onMouseMove($event);
+            break;
+          case "mouseUp":
+            currentTool.onMouseUp($event);
+            break;
+        }
+      } catch (error) {
+        this.$catchError(error);
       }
-
-      const onMouseDownEvent = this.editModelListObj[currentToolMode]
-        .onMouseDown;
-
-      onMouseDownEvent && onMouseDownEvent($event);
     },
 
-    // 主区域事件：鼠标移动
-    mainContentEvt_onMouseMove($event) {
-      const currentToolMode = this.state.currentToolMode;
+    //判断一个点是否在指定区域内
+    isInPolygon(checkPoint, polygonPoints) {
+      var counter = 0;
+      var i;
+      var xinters;
+      var p1, p2;
+      var pointCount = polygonPoints.length;
+      p1 = polygonPoints[0];
 
-      if (currentToolMode === null) {
-        return false;
+      for (i = 1; i <= pointCount; i++) {
+        p2 = polygonPoints[i % pointCount];
+        if (
+          checkPoint[0] > Math.min(p1[0], p2[0]) &&
+          checkPoint[0] <= Math.max(p1[0], p2[0])
+        ) {
+          if (checkPoint[1] <= Math.max(p1[1], p2[1])) {
+            if (p1[0] != p2[0]) {
+              xinters =
+                ((checkPoint[0] - p1[0]) * (p2[1] - p1[1])) / (p2[0] - p1[0]) +
+                p1[1];
+              if (p1[1] == p2[1] || checkPoint[1] <= xinters) {
+                counter++;
+              }
+            }
+          }
+        }
+        p1 = p2;
       }
-
-      this.editModelListObj[currentToolMode].onMouseMove($event);
+      if (counter % 2 == 0) {
+        return false;
+      } else {
+        return true;
+      }
     },
 
-    //主区域事件：鼠标抬起
-    mainContentEvt_onMouseUp($event) {
-      const currentToolMode = this.state.currentToolMode;
+    //转化图片的尺寸
+    async transImg(canvasClient, choosedImg) {
+      return new Promise((resolve, reject) => {
+        let newImgEle = new Image();
 
-      if (currentToolMode === null) {
-        return false;
-      }
+        newImgEle.src = choosedImg.url;
+        newImgEle.onload = (e) => {
+          try {
+            console.info("imgInfo", e);
 
-      this.editModelListObj[currentToolMode].onMouseUp($event);
+            //当前选择的image的尺寸信息
+            const { width: imgWidth, height: imgHeight } = newImgEle;
+            const sizeRatio = imgWidth / imgHeight;
+
+            let scaleRatio = 0.9;
+
+            //画布的尺寸信息
+            const { width: canvasWidth, height: canvasHeight } = canvasClient;
+
+            //图片的最大显示
+            const maxSize = {
+              width: canvasWidth * scaleRatio,
+              height: canvasHeight * scaleRatio,
+            };
+
+            //调整后的图片尺寸
+            let aferTransImg = {
+              width: imgWidth,
+              height: imgHeight,
+            };
+
+            //判断图片的宽高比，从而调整它显示比例
+            if (sizeRatio > 1) {
+              console.info("比例：", "宽大于高");
+
+              if (maxSize.width < imgWidth) {
+                aferTransImg = {
+                  width: maxSize.width,
+                  height: maxSize.width / sizeRatio,
+                };
+              } else {
+                scaleRatio = 1;
+              }
+            } else if (sizeRatio === 1) {
+              console.info("比例：", "正方形");
+
+              if (maxSize.width < imgWidth) {
+                aferTransImg = {
+                  width: maxSize.width,
+                  height: maxSize.width,
+                };
+              } else {
+                scaleRatio = 1;
+              }
+            } else {
+              console.info("比例：", "高大于宽");
+
+              if (maxSize.height < imgHeight) {
+                aferTransImg = {
+                  width: maxSize.height * sizeRatio,
+                  height: maxSize.height,
+                };
+              } else {
+                scaleRatio = 1;
+              }
+            }
+
+            aferTransImg.sizeRatio = sizeRatio; //宽高尺寸比率
+            aferTransImg.scaleRatio = scaleRatio; //转换后的图片与转换钱的缩放比
+            aferTransImg.url = choosedImg.url;
+            aferTransImg.imgEle = newImgEle;
+
+            console.info("aferTransImg", aferTransImg);
+
+            resolve(aferTransImg);
+          } catch (error) {
+            reject(error);
+          }
+        };
+
+        newImgEle.onerror = (error) => {
+          reject(error);
+        };
+      });
+    },
+
+    //将图片填充到画布的中心区域
+    fillImgInCanvasCenter(options) {
+      let { ctx, imgInfo, canvasClient } = options;
+
+      console.info("options", options);
+      console.info("options.imgInfo", options.imgInfo);
+
+      ctx.drawImage(
+        imgInfo.imgEle,
+        imgInfo.x,
+        imgInfo.y,
+        imgInfo.width,
+        imgInfo.height
+      );
+    },
+
+    //获取矩形的坐标群
+    getRectCoords(options) {
+      const { x, y, width: w, height: h } = options;
+
+      return [
+        [x, y],
+        [x + w, y],
+        [x + w, y + h],
+        [x, y + h],
+      ];
     },
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.rule-modules {
-  -moz-user-select: none; /*火狐*/
-  -webkit-user-select: none; /*webkit浏览器*/
-  -ms-user-select: none; /*IE10*/
-  -khtml-user-select: none; /*早期浏览器*/
-  user-select: none;
-}
-// 刻度尺：x轴
-.x-rule {
-  top: 0;
-  border: 1px solid #333;
-  background-color: #fff;
-
-  .rule-item {
-    width: 54px;
-    height: 24px;
-    border-right: 1px solid #333;
-
-    .number {
-      font-size: 10px;
-    }
-
-    .mark-line-modules {
-      left: 0;
-      bottom: 0;
-      right: 0;
-      height: 20%;
-
-      .mark-item {
-        bottom: 0;
-        width: 1px;
-        background-color: #333;
-      }
-    }
-  }
-}
-
-// 刻度尺：y轴
-.y-rule {
-  left: 0;
-  border: 1px solid #333;
-  background-color: #fff;
-  width: 26px;
-
-  .rule-item {
-    width: 24px;
-    height: 54px;
-    border-bottom: 1px solid #333;
-
-    .number {
-      width: 20%;
-      font-size: 10px;
-      overflow-wrap: break-word;
-      line-height: 1;
-    }
-
-    .mark-line-modules {
-      top: 0;
-      bottom: 0;
-      right: 0;
-      width: 20%;
-
-      .mark-item {
-        right: 0;
-        height: 1px;
-        background-color: #333;
-      }
-    }
-  }
-}
-
-// 参考线：x轴
-.reference-line {
-  position: relative;
-  border: 0.5px dotted #999;
-
-  &::after {
-    position: absolute;
-    content: "";
-    left: -10px;
-    top: -10px;
-    right: -10px;
-    bottom: -10px;
-  }
-
-  &.active {
-    border-color: red;
-  }
-
-  &.xAxis {
-    left: 0;
-    right: 0;
-  }
-
-  &.yAxis {
-    top: 0;
-    bottom: 0;
-  }
-}
-
-// 模块：绘制矩形框框
-.draw-rect-modules {
-  border: 1px solid red;
-}
-
-//模块：图片
-.image-modules {
-  z-index: -1;
+.canvas-box {
+  border: 1px solid currentColor;
+  background-color: rgb(37, 37, 37);
 }
 </style>

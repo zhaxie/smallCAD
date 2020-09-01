@@ -1,23 +1,6 @@
 export default {
     state: {
         currentToolMode: null,
-        sideToolList: [
-            {
-                model: 'drawRect',
-                icon: "icon-rect",
-            },
-            {
-                model: 'drawStraightLine',
-                icon: "icon-zhixian",
-            },
-            // {
-            //     icon: "icon-yuanhuxian",
-            // },
-            {
-                model: 'drawCircular',
-                icon: "icon-yuan",
-            },
-        ],
 
         currentUploadedImageInfo: {
             name: '',

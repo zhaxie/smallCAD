@@ -10,7 +10,7 @@
           <!-- 已打开的文件 -->
           <!-- <openedFileBar></openedFileBar> -->
           <!-- 标尺工具 -->
-          <ruleTool class="col" style="overflow: scroll;"></ruleTool>
+          <ruleTool class="col" ></ruleTool>
         </div>
       </div>
     </div>

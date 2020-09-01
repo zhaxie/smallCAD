@@ -1,13 +1,13 @@
 <template>
   <div class="side-bar-modules">
     <div class="px-10 tool-title">工具</div>
-    <div class="d-flex flex-column align-items-center tool-list" >
+    <div class="d-flex flex-column align-items-center tool-list">
       <div
-        class="pa-20 iconfont cursor-pointer"
-        v-for="(item, index) in state.sideToolList"
+        class="position-relative pa-20 iconfont cursor-pointer tool-item"
+        v-for="(item, index) in sideToolList"
         :key="'sideToolList' + index"
-        :class="{active: item.model === state.currentToolMode, [item.icon]: item.icon}"
-        @click="$storeCAD.switchCurrentToolModel(item)"
+        :class="{active: item.model === currentToolMode, [item.icon]: item.icon}"
+        @click="handleSwitchTool(item)"
       ></div>
     </div>
   </div>
@@ -17,8 +17,32 @@
 export default {
   data() {
     return {
-      state: this.$storeCAD.state,
+      currentToolMode: null,
+      sideToolList: [
+        {
+          model: "drawRect",
+          icon: "icon-rect",
+        },
+        {
+          model: "drawStraightLine",
+          icon: "icon-zhixian",
+        },
+        // {
+        //     icon: "icon-yuanhuxian",
+        // },
+        {
+          model: "drawCircular",
+          icon: "icon-yuan",
+        },
+      ],
     };
+  },
+  methods: {
+    handleSwitchTool(thisTool) {
+      this.$bus_unique.emit("switchTool", thisTool);
+
+      this.currentToolMode = thisTool.model;
+    },
   },
 };
 </script>
@@ -34,8 +58,7 @@ export default {
   }
 
   .tool-list {
-    .active {
-      position: relative;
+    .tool-item {
 
       &::after {
         position: absolute;
@@ -46,8 +69,14 @@ export default {
 
         content: "";
         display: block;
-        border: 1px solid #999;
+        border: 1px solid transparent;
         border-radius: 0.25rem;
+      }
+
+      &.active {
+        &::after {
+          border: 1px solid #999;
+        }
       }
     }
   }
