@@ -9,35 +9,20 @@
     <!-- 模块：绘制矩形框框 -->
     <template>
       <div
-        class="position-absolute draw-rect-modules"
+        class="position-absolute z100 draw-rect-modules"
         v-for="(item, index) in createdRectObj.list"
         :key="index"
         :style="{left: item.left + 'px', top: item.top + 'px',  width: item.width + 'px', height: item.height + 'px'}"
-        :class="{active: currentSelectedRectIndex === index}"
-        @mousedown.stop="handleSelectedThisRect(item, index, $event)"
-      >
-        <div
-          class="position-relative w-100 h-100 operaton-list"
-          v-if="currentSelectedRectIndex === index"
-        >
-          <div
-            class="position-absolute operate-item"
-            v-for="(itemOperate, index) in operatePointerList"
-            :key="index"
-            :class="itemOperate.position"
-            @mousedown.stop="rectOperatePointerEvt('mouseDown', $event,  item, itemOperate,)"
-          ></div>
-        </div>
-      </div>
+      ></div>
     </template>
 
     <!-- 模块：图片 -->
     <template>
       <div
         class="position-absolute image-modules"
-        :style="{left: targetImg.x + 'px', top: targetImg.y + 'px', zIndex: -1, width: targetImg.width + 'px', height: targetImg.height + 'px',}"
+        :style="{left: targetImg.x + 'px', top: targetImg.y + 'px', zIndex: -1}"
       >
-        <img class="imgCover d-block" :src="targetImg.url" alt ref="uploadedImageInfo" />
+        <img class="d-block" :src="targetImg.url" alt ref="uploadedImageInfo" />
       </div>
     </template>
   </div>
@@ -54,8 +39,6 @@ export default {
 
       targetImg: {},
       initInfo: {},
-      currentSelectedRectIndex: null,
-      operatePointerList: [],
     };
   },
   mounted() {
@@ -116,11 +99,10 @@ export default {
 
       console.info("contentClient", contentClient);
 
-      const initInfo = (this.initInfo = {
+      const initInfo = this.initInfo = {
         contentClient,
-      });
-      this.toolEvts = this.getToolEvts(initInfo); //获取工具栏事件
-      this.operatePointerList = this.getRectOperatePointerList(); //获取矩形操作点列表（伸缩变形等）
+      };
+      this.toolEvts = this.getToolEvts(initInfo);
     },
 
     //获取工具栏的事件
@@ -129,7 +111,6 @@ export default {
         lastRectList: [],
         drawSuccessRectList: [],
       };
-      let _operateRectObj = {};
       let { contentClient } = initInfo;
 
       const toolEvts = {
@@ -174,8 +155,6 @@ export default {
               height: pageY - mouseDown_y,
             };
 
-            console.info("$event", $event.offsetX);
-
             if (axisObj.width < 0 && axisObj.height < 0) {
               moveDirection = "左上";
 
@@ -205,153 +184,8 @@ export default {
             console.info("moveDirection", moveDirection);
           },
           onMouseUp: ($event) => {
-            console.info("绘图结束", $event);
-
             //结束绘图
             _rectObj.isDrawing = false;
-          },
-        },
-        operateRectShape: {
-          onMouseDown: ($event, thisRect, thisOperatePointer) => {
-            _operateRectObj = {
-              isOperating: true, //开始操作
-              thisRect, //当前操作哪个矩形
-              thisOperatePointer, //操作矩形的哪个操控点
-              startPointer: $event, //鼠标的起始点
-            };
-
-            console.info("_operateRectObj", _operateRectObj);
-            console.info("_operateRectObj.startPointer", $event);
-
-            this.currentToolModel = "operateRectShape"; //切换工具模式
-          },
-          onMouseMove: ($event) => {
-            const {
-              isOperating,
-              thisRect,
-              thisOperatePointer,
-              startPointer,
-            } = _operateRectObj;
-
-            if (!isOperating) {
-              return false;
-            }
-
-            console.info("_operateRectObj_onMouseMove", $event);
-
-            const { position } = thisOperatePointer;
-            const { pageX, pageY } = $event;
-
-            const offsetX = pageX - contentClient.left;
-            const offsetY = pageY - contentClient.top;
-
-            const minLeft = thisRect.left + thisRect.width;
-            const minTop = thisRect.top + thisRect.height;
-
-            console.info("position", position);
-
-            // 操控点的位置类型：
-
-            // position: "left-top",
-            // position: "center-top",
-            // position: "right-top",
-            // position: "right-center",
-            // position: "right-bottom",
-            // position: "center-bottom",
-            // position: "left-bottom",
-            // position: "left-center",
-
-            switch (position) {
-              case "left-top":
-                if (offsetX >= thisRect.left + thisRect.width) {
-                  return false;
-                }
-
-                if (offsetY >= thisRect.top + thisRect.height) {
-                  return false;
-                }
-
-                thisRect.width = thisRect.left + thisRect.width - offsetX;
-                thisRect.height = thisRect.top + thisRect.height - offsetY;
-
-                thisRect.left = offsetX;
-                thisRect.top = offsetY;
-                break;
-              case "center-top":
-                if (offsetY >= thisRect.top + thisRect.height) {
-                  return false;
-                }
-
-                thisRect.height = thisRect.top + thisRect.height - offsetY;
-                thisRect.top = offsetY;
-                break;
-              case "right-top":
-                if (offsetX <= thisRect.left) {
-                  return false;
-                }
-
-                if (offsetY >= thisRect.top + thisRect.height) {
-                  return false;
-                }
-
-                thisRect.width = offsetX - thisRect.left;
-                thisRect.height = thisRect.top + thisRect.height - offsetY;
-
-                thisRect.top = offsetY;
-                break;
-              case "right-center":
-                if (offsetX <= thisRect.left) {
-                  return false;
-                }
-
-                thisRect.width = offsetX - thisRect.left;
-                break;
-              case "right-bottom":
-                if (offsetX <= thisRect.left) {
-                  return false;
-                }
-
-                if (offsetY <= thisRect.top) {
-                  return false;
-                }
-
-                thisRect.width = offsetX - thisRect.left;
-                thisRect.height = offsetY - thisRect.top;
-                break;
-              case "center-bottom":
-                if (offsetY <= thisRect.top) {
-                  return false;
-                }
-
-                thisRect.height = offsetY - thisRect.top;
-                break;
-              case "left-bottom":
-                if (offsetX >= thisRect.left + thisRect.width) {
-                  return false;
-                }
-
-                if (offsetY <= thisRect.top) {
-                  return false;
-                }
-
-                thisRect.width = thisRect.left + thisRect.width - offsetX;
-                thisRect.height = offsetY - thisRect.top;
-
-                thisRect.left = offsetX;
-                break;
-              case "left-center":
-                if (offsetX >= thisRect.left + thisRect.width) {
-                  return false;
-                }
-
-                thisRect.width = thisRect.left + thisRect.width - offsetX;
-                thisRect.left = offsetX;
-
-                break;
-            }
-          },
-          onMouseUp: () => {
-            _rectObj.isOperating = false;
           },
         },
       };
@@ -359,72 +193,26 @@ export default {
       return toolEvts;
     },
 
-    //获取矩形操作点列表（伸缩变形等）
-    getRectOperatePointerList() {
-      return [
-        {
-          position: "left-top",
-        },
-        {
-          position: "center-top",
-        },
-        {
-          position: "right-top",
-        },
-        {
-          position: "right-center",
-        },
-        {
-          position: "right-bottom",
-        },
-        {
-          position: "center-bottom",
-        },
-        {
-          position: "left-bottom",
-        },
-        {
-          position: "left-center",
-        },
-      ];
-    },
-
     //画布事件
     canvasEvt(evtName, $event) {
       try {
         const targetImg = this.targetImg;
-        const { contentClient } = this.initInfo;
-        const currentPointer = [
-          $event.pageX,
-          $event.pageY,
-        ];
+        const currentPointer = [$event.offsetX, $event.offsetY];
 
-        const currentToolModel = this.currentToolModel;
-        const currentTool = this.toolEvts[currentToolModel];
-
-        if (!currentToolModel || !targetImg || !targetImg.coords) {
+        if (!targetImg) {
           return false;
         }
 
-        //是否有效点击（必须在底层图像上）
+        // //是否有效点击（必须在底层图像上）
         const isInTargetImg = this.isInPolygon(
           currentPointer,
           targetImg.coords
         );
 
-        console.info('isInTargetImg', isInTargetImg);
+        if (isInTargetImg === false) return false;
 
-        //来到这里
-        // if (isInTargetImg === false) {
-        //   // currentTool.onMouseUp($event);
-        //   return false;
-        // }
-
-        // 测试
-
-        if (evtName === "mouseMove") {
-          return false;
-        }
+        const currentToolModel = this.currentToolModel;
+        const currentTool = this.toolEvts[currentToolModel];
 
         switch (evtName) {
           case "mouseDown":
@@ -435,37 +223,11 @@ export default {
             break;
           case "mouseUp":
             currentTool.onMouseUp($event);
-
-            //保存记录上一次使用的工具是哪一个，用于结束后恢复上一次的工具，以便继续操作
-            const lastUsingToolModel = this.lastUsingToolModel;
-
-            if (lastUsingToolModel) {
-              this.currentToolModel = lastUsingToolModel;
-            }
-            this.lastUsingToolModel = currentToolModel;
             break;
         }
       } catch (error) {
         this.$catchError(error);
       }
-    },
-
-    //选中矩形框
-    handleSelectedThisRect(thisRect, thisIndex, $event) {
-      console.info("thisRect", thisRect);
-      console.info("thisIndex", thisIndex);
-      console.info("选中", $event);
-
-      this.currentSelectedRectIndex = thisIndex;
-    },
-
-    //选中矩形框的操作点
-    rectOperatePointerEvt(evtName, $event, thisRect, thisOperatePointer) {
-      this.toolEvts.operateRectShape.onMouseDown(
-        $event,
-        thisRect,
-        thisOperatePointer
-      );
     },
 
     //转化图片的尺寸
@@ -616,66 +378,6 @@ export default {
 
 // 模块：绘制矩形框框
 .draw-rect-modules {
-  border: 1px solid #999;
-
-  .operaton-list {
-    .operate-item {
-      width: 10px;
-      height: 10px;
-      border: 1px solid red;
-
-      &.left-top {
-        left: 0;
-        top: 0;
-        transform: translate3d(-50%, -50%, 0);
-      }
-
-      &.center-top {
-        left: 50%;
-        top: 0;
-        transform: translate3d(-50%, -50%, 0);
-      }
-
-      &.right-top {
-        right: 0;
-        top: 0;
-        transform: translate3d(50%, -50%, 0);
-      }
-
-      &.right-center {
-        right: 0;
-        top: 50%;
-        transform: translate3d(50%, -50%, 0);
-      }
-
-      &.right-bottom {
-        right: 0;
-        bottom: 0;
-        transform: translate3d(50%, 50%, 0);
-      }
-
-      &.center-bottom {
-        left: 50%;
-        bottom: 0;
-        transform: translate3d(-50%, 50%, 0);
-      }
-
-      &.left-bottom {
-        left: 0;
-        bottom: 0;
-        transform: translate3d(-50%, 50%, 0);
-      }
-
-      &.left-center {
-        left: 0;
-        top: 50%;
-        transform: translate3d(-50%, -50%, 0);
-      }
-    }
-  }
-
-  &.active {
-    border: 1px solid red;
-  }
+  border: 1px solid red;
 }
 </style>
