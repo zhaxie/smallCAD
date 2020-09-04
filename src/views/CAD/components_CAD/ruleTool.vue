@@ -14,7 +14,7 @@
         :key="index"
         :style="{left: item.left + 'px', top: item.top + 'px',  width: item.width + 'px', height: item.height + 'px'}"
         :class="{active: currentSelectedRectIndex === index}"
-        @mousedown.stop="handleSelectedThisRect(item, index, $event)"
+        @mousedown.stop="handleSelectedThisRect($event, item, index, )"
       >
         <div
           class="position-relative w-100 h-100 operaton-list"
@@ -56,7 +56,19 @@ export default {
       initInfo: {},
       currentSelectedRectIndex: null,
       operatePointerList: [],
+      currentToolModel: null,
     };
+  },
+  watch: {
+    currentToolModel(newValue, oldValue) {
+      console.error("currentToolModel", newValue);
+
+      if (newValue !== "editRectShape") {
+        this.currentSelectedRectIndex = null;
+      }
+
+      this.$bus_unique.emit("updateCurrentToolModel", newValue);
+    },
   },
   mounted() {
     this.init();
@@ -125,23 +137,28 @@ export default {
 
     //获取工具栏的事件
     getToolEvts(initInfo) {
-      let _rectObj = {
+      //矩形: 新建
+      let _rectObj_create = {
         lastRectList: [],
         drawSuccessRectList: [],
       };
-      let _operateRectObj = {};
+      //矩形: 编辑形状
+      let _rectObj_editShape = {};
+      //矩形：移动
+      let _rectObj_move = {};
       let { contentClient } = initInfo;
 
       const toolEvts = {
+        //绘制矩形
         drawRect: {
           onMouseDown: ($event) => {
             console.info("开始绘制矩形", "");
             console.info("$event", $event);
 
-            _rectObj.isDrawing = true;
+            _rectObj_create.isDrawing = true;
 
             //保存鼠标按下的坐标
-            _rectObj.mouseDownPoint = {
+            _rectObj_create.mouseDownPoint = {
               x: $event.pageX,
               y: $event.pageY,
             };
@@ -154,16 +171,19 @@ export default {
               height: 0,
             };
 
-            _rectObj.currentRect = currentRect;
+            _rectObj_create.currentRect = currentRect;
             this.createdRectObj.list.push(currentRect);
 
             console.info("this.rectObj", this.createdRectObj);
           },
           onMouseMove: async ($event) => {
-            if (!_rectObj.isDrawing) {
+            if (!_rectObj_create.isDrawing) {
               return false;
             }
-            let { x: mouseDown_x, y: mouseDown_y } = _rectObj.mouseDownPoint;
+            let {
+              x: mouseDown_x,
+              y: mouseDown_y,
+            } = _rectObj_create.mouseDownPoint;
             let { pageX, pageY, offsetX, offsetY } = $event;
 
             let currentRect = {};
@@ -179,65 +199,63 @@ export default {
             if (axisObj.width < 0 && axisObj.height < 0) {
               moveDirection = "左上";
 
-              _rectObj.currentRect.left = offsetX;
-              _rectObj.currentRect.top = offsetY;
-              _rectObj.currentRect.width = mouseDown_x - pageX;
-              _rectObj.currentRect.height = mouseDown_y - pageY;
+              _rectObj_create.currentRect.left = offsetX;
+              _rectObj_create.currentRect.top = offsetY;
+              _rectObj_create.currentRect.width = mouseDown_x - pageX;
+              _rectObj_create.currentRect.height = mouseDown_y - pageY;
             } else if (axisObj.width > 0 && axisObj.height < 0) {
               moveDirection = "右上";
 
-              _rectObj.currentRect.top = offsetY;
-              _rectObj.currentRect.width = pageX - mouseDown_x;
-              _rectObj.currentRect.height = mouseDown_y - pageY;
+              _rectObj_create.currentRect.top = offsetY;
+              _rectObj_create.currentRect.width = pageX - mouseDown_x;
+              _rectObj_create.currentRect.height = mouseDown_y - pageY;
             } else if (axisObj.width < 0 && axisObj.height > 0) {
               moveDirection = "左下";
 
-              _rectObj.currentRect.left = offsetX;
-              _rectObj.currentRect.width = mouseDown_x - pageX;
-              _rectObj.currentRect.height = pageY - mouseDown_y;
+              _rectObj_create.currentRect.left = offsetX;
+              _rectObj_create.currentRect.width = mouseDown_x - pageX;
+              _rectObj_create.currentRect.height = pageY - mouseDown_y;
             } else if (axisObj.width > 0 && axisObj.height > 0) {
               moveDirection = "右下";
 
-              _rectObj.currentRect.width = pageX - mouseDown_x;
-              _rectObj.currentRect.height = pageY - mouseDown_y;
+              _rectObj_create.currentRect.width = pageX - mouseDown_x;
+              _rectObj_create.currentRect.height = pageY - mouseDown_y;
             }
 
             console.info("moveDirection", moveDirection);
           },
           onMouseUp: ($event) => {
-            console.info("绘图结束", $event);
+            // console.info("绘图结束", $event);
 
             //结束绘图
-            _rectObj.isDrawing = false;
+            _rectObj_create.isDrawing = false;
           },
         },
-        operateRectShape: {
+        //操作矩形形状
+        editRectShape: {
           onMouseDown: ($event, thisRect, thisOperatePointer) => {
-            _operateRectObj = {
+            _rectObj_editShape = {
               isOperating: true, //开始操作
               thisRect, //当前操作哪个矩形
               thisOperatePointer, //操作矩形的哪个操控点
-              startPointer: $event, //鼠标的起始点
             };
 
-            console.info("_operateRectObj", _operateRectObj);
-            console.info("_operateRectObj.startPointer", $event);
+            console.info("_rectObj_editShape", _rectObj_editShape);
 
-            this.currentToolModel = "operateRectShape"; //切换工具模式
+            this.currentToolModel = "editRectShape"; //切换工具模式
           },
           onMouseMove: ($event) => {
             const {
               isOperating,
               thisRect,
               thisOperatePointer,
-              startPointer,
-            } = _operateRectObj;
+            } = _rectObj_editShape;
 
             if (!isOperating) {
               return false;
             }
 
-            console.info("_operateRectObj_onMouseMove", $event);
+            console.info("_rectObj_editShape_onMouseMove", $event);
 
             const { position } = thisOperatePointer;
             const { pageX, pageY } = $event;
@@ -351,7 +369,73 @@ export default {
             }
           },
           onMouseUp: () => {
-            _rectObj.isOperating = false;
+            _rectObj_editShape.isOperating = false;
+            this.currentToolModel = null;
+          },
+        },
+        //移动矩形
+        moveRect: {
+          onMouseDown: ($event, thisRect) => {
+            const targetImg = this.targetImg;
+
+            _rectObj_move = {
+              isMoving: true,
+              thisRect,
+              offsetClient: {
+                left: $event.offsetX,
+                top: $event.offsetY,
+              },
+              maxOffsetClient: {
+                left: targetImg.x + targetImg.width - thisRect.width,
+                top: targetImg.y + targetImg.height - thisRect.height,
+              },
+              targetImg,
+            };
+
+            this.currentToolModel = "moveRect";
+          },
+          onMouseMove: ($event) => {
+            const {
+              isMoving,
+              thisRect,
+              offsetClient,
+              maxOffsetClient,
+              targetImg,
+            } = _rectObj_move;
+
+            if (!isMoving) {
+              return false;
+            }
+
+            let newRectLeft =
+              $event.pageX - contentClient.left - offsetClient.left;
+            let newRectTop =
+              $event.pageY - contentClient.top - offsetClient.top;
+
+            const { left: maxOffsetLeft, top: maxOffsetTop } = maxOffsetClient;
+
+            if (newRectLeft < targetImg.x) {
+              newRectLeft = targetImg.x;
+            }
+
+            if (newRectTop < targetImg.y) {
+              newRectTop = targetImg.y;
+            }
+
+            if (newRectLeft > maxOffsetLeft) {
+              newRectLeft = maxOffsetLeft;
+            }
+
+            if (newRectTop > maxOffsetTop) {
+              newRectTop = maxOffsetTop;
+            }
+
+            thisRect.left = newRectLeft;
+            thisRect.top = newRectTop;
+          },
+          onMouseUp: () => {
+            _rectObj_move.isMoving = false;
+            this.currentToolModel = null;
           },
         },
       };
@@ -395,8 +479,8 @@ export default {
         const targetImg = this.targetImg;
         const { contentClient } = this.initInfo;
         const currentPointer = [
-          $event.pageX,
-          $event.pageY,
+          $event.pageX - contentClient.left,
+          $event.pageY - contentClient.top,
         ];
 
         const currentToolModel = this.currentToolModel;
@@ -412,19 +496,20 @@ export default {
           targetImg.coords
         );
 
-        console.info('isInTargetImg', isInTargetImg);
+        // console.info("$event", $event);
+        // console.info("isInTargetImg", isInTargetImg);
 
         //来到这里
-        // if (isInTargetImg === false) {
-        //   // currentTool.onMouseUp($event);
-        //   return false;
-        // }
+        if (isInTargetImg === false) {
+          currentTool.onMouseUp($event);
+          return false;
+        }
 
         // 测试
 
-        if (evtName === "mouseMove") {
-          return false;
-        }
+        // if (evtName === "mouseMove") {
+        //   return false;
+        // }
 
         switch (evtName) {
           case "mouseDown":
@@ -435,14 +520,6 @@ export default {
             break;
           case "mouseUp":
             currentTool.onMouseUp($event);
-
-            //保存记录上一次使用的工具是哪一个，用于结束后恢复上一次的工具，以便继续操作
-            const lastUsingToolModel = this.lastUsingToolModel;
-
-            if (lastUsingToolModel) {
-              this.currentToolModel = lastUsingToolModel;
-            }
-            this.lastUsingToolModel = currentToolModel;
             break;
         }
       } catch (error) {
@@ -451,17 +528,18 @@ export default {
     },
 
     //选中矩形框
-    handleSelectedThisRect(thisRect, thisIndex, $event) {
+    handleSelectedThisRect($event, thisRect, thisIndex) {
       console.info("thisRect", thisRect);
       console.info("thisIndex", thisIndex);
       console.info("选中", $event);
 
       this.currentSelectedRectIndex = thisIndex;
+      this.toolEvts.moveRect.onMouseDown($event, thisRect, thisIndex);
     },
 
     //选中矩形框的操作点
     rectOperatePointerEvt(evtName, $event, thisRect, thisOperatePointer) {
-      this.toolEvts.operateRectShape.onMouseDown(
+      this.toolEvts.editRectShape.onMouseDown(
         $event,
         thisRect,
         thisOperatePointer
@@ -675,6 +753,7 @@ export default {
   }
 
   &.active {
+    z-index: 100; //必修提高层级，不然可能会出现被盖住导致不能选中
     border: 1px solid red;
   }
 }

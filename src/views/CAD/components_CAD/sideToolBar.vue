@@ -6,7 +6,7 @@
         class="position-relative pa-20 iconfont cursor-pointer tool-item"
         v-for="(item, index) in sideToolList"
         :key="'sideToolList' + index"
-        :class="{active: item.model === currentToolMode, [item.icon]: item.icon}"
+        :class="{active: item.model === currentToolModel, [item.icon]: item.icon}"
         @click="handleSwitchTool(item)"
       ></div>
     </div>
@@ -17,7 +17,7 @@
 export default {
   data() {
     return {
-      currentToolMode: null,
+      currentToolModel: null,
       sideToolList: [
         {
           model: "drawRect",
@@ -37,11 +37,16 @@ export default {
       ],
     };
   },
+  mounted () {
+    this.$bus_unique.on('updateCurrentToolModel', 'sideToolBar', (newModel) => {
+      this.currentToolModel = newModel;
+    });
+  },
   methods: {
     handleSwitchTool(thisTool) {
       this.$bus_unique.emit("switchTool", thisTool);
 
-      this.currentToolMode = thisTool.model;
+      this.currentToolModel = thisTool.model;
     },
   },
 };
