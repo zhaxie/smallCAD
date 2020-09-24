@@ -20,27 +20,24 @@ export default {
       currentToolModel: null,
       sideToolList: [
         {
-          model: "drawRect",
+          model: "drawRect", //绘制矩形
           icon: "icon-rect",
         },
         {
-          model: "drawStraightLine",
-          icon: "icon-zhixian",
+          model: "adjustCoverShape", //调整覆盖物形状
+          icon: "icon-suofang",
         },
-        // {
-        //     icon: "icon-yuanhuxian",
-        // },
         {
-          model: "drawCircular",
-          icon: "icon-yuan",
+          model: "moveCover", //移动覆盖物
+          icon: "icon-move",
         },
       ],
     };
   },
   mounted () {
-    this.$bus_unique.on('updateCurrentToolModel', 'sideToolBar', (newModel) => {
-      this.currentToolModel = newModel;
-    });
+    // this.$bus_unique.on('updateCurrentToolModel', 'sideToolBar', (newModel) => {
+    //   this.currentToolModel = newModel;
+    // });
   },
   methods: {
     handleSwitchTool(thisTool) {

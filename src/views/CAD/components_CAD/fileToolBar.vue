@@ -5,23 +5,35 @@
         <button
           class="px-20 tool-btn"
           v-if="!state.currentUploadedImageInfo.name"
-          @click="$refs.inputFile.click();"
-        >选择平面图</button>
+          @click="$refs.inputFile.click()"
+        >
+          选择平面图
+        </button>
         <div class="d-flex align-items-center px-20 select-file-btn" v-else>
-          <div>{{state.currentUploadedImageInfo.name}}</div>
+          <div>{{ state.currentUploadedImageInfo.name }}</div>
           <div
             class="pl-10 iconfont icon-close cursor-pointer"
-            @click="handleRemoveUploadedFile();"
+            @click="handleRemoveUploadedFile()"
           ></div>
         </div>
         <div class="col"></div>
-        <button class="mx-5 px-20 tool-btn" @click="handleSave">保存</button>
-        <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">打印</button>
-        <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">导出</button>
+        <button
+          class="mx-5 px-20 tool-btn"
+          @click="handleGetCreatedCoveringsLocation"
+        >
+          生成覆盖物区域
+        </button>
+        <!-- <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">打印</button>
+        <button class="mx-5 px-20 tool-btn" @click="$refs.inputFile.click();">导出</button> -->
       </div>
     </div>
     <!-- 上传文件专用 -->
-    <input type="file" class="d-none" ref="inputFile" @change="handleUploadFile" />
+    <input
+      type="file"
+      class="d-none"
+      ref="inputFile"
+      @change="handleUploadFile"
+    />
   </div>
 </template>
 
@@ -44,10 +56,9 @@ export default {
 
           reader.readAsDataURL(file);
           reader.onload = () => {
-
             this.$bus_unique.emit("choosedLocalImage", {
               name: file.name,
-              url: reader.result
+              url: reader.result,
             });
           };
         } else {
@@ -63,7 +74,22 @@ export default {
       this.$storeCAD.removeUploadedImg();
     },
 
-    handleSave() {},
+    handleGetCreatedCoveringsLocation() {
+      this.$bus_unique.emit("rightTopBtnBarEvts", {
+        btnType: "getCreatedCoveringsInfo",
+        success: (options) => {
+          const { targetImg, rectList } = options;
+          const { x, y } = targetImg; //目标图像的坐标;
+
+          rectList.forEach((item) => {
+            item.x_keepTargetImg = item.left - x; //该矩形相对于目标图像的左边距
+            item.y_keepTargetImg = item.top - y;  //该矩形相对于目标图像的上边距
+          }); 
+
+          console.info('最终的矩形坐标信息：x y width height', rectList);
+        },
+      });
+    },
   },
 };
 </script>

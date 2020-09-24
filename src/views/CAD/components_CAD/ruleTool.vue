@@ -12,22 +12,40 @@
         class="position-absolute draw-rect-modules"
         v-for="(item, index) in createdRectObj.list"
         :key="index"
-        :style="{left: item.left + 'px', top: item.top + 'px',  width: item.width + 'px', height: item.height + 'px'}"
-        :class="{active: currentSelectedRectIndex === index}"
-        @mousedown.stop="handleSelectedThisRect($event, item, index, )"
+        :style="{
+          left: item.left + 'px',
+          top: item.top + 'px',
+          width: item.width + 'px',
+          height: item.height + 'px',
+        }"
+        :class="{ active: currentSelectedRectIndex === index }"
+        @mousedown.stop="handleSelectedThisRect($event, item, index)"
       >
         <div
           class="position-relative w-100 h-100 operaton-list"
-          v-if="currentSelectedRectIndex === index"
+          v-if="
+            currentSelectedRectIndex === index &&
+            currentToolModel === 'editRectShape'
+          "
         >
           <div
             class="position-absolute operate-item"
             v-for="(itemOperate, index) in operatePointerList"
             :key="index"
             :class="itemOperate.position"
-            @mousedown.stop="rectOperatePointerEvt('mouseDown', $event,  item, itemOperate,)"
+            @mousedown.stop="
+              rectOperatePointerEvt('mouseDown', $event, item, itemOperate)
+            "
           ></div>
         </div>
+        <div
+          class="position-absolute delete-btn"
+          v-if="
+            currentSelectedRectIndex === index &&
+            currentToolModel !== 'editRectShape'
+          "
+          @click.stop="handleDeleteThisRect(createdRectObj.list, index)"
+        ></div>
       </div>
     </template>
 
@@ -35,9 +53,20 @@
     <template>
       <div
         class="position-absolute image-modules"
-        :style="{left: targetImg.x + 'px', top: targetImg.y + 'px', zIndex: -1, width: targetImg.width + 'px', height: targetImg.height + 'px',}"
+        :style="{
+          left: targetImg.x + 'px',
+          top: targetImg.y + 'px',
+          zIndex: -1,
+          width: targetImg.width + 'px',
+          height: targetImg.height + 'px',
+        }"
       >
-        <img class="imgCover d-block" :src="targetImg.url" alt ref="uploadedImageInfo" />
+        <img
+          class="imgCover d-block"
+          :src="targetImg.url"
+          alt
+          ref="uploadedImageInfo"
+        />
       </div>
     </template>
   </div>
@@ -60,15 +89,13 @@ export default {
     };
   },
   watch: {
-    currentToolModel(newValue, oldValue) {
-      console.error("currentToolModel", newValue);
-
-      if (newValue !== "editRectShape") {
-        this.currentSelectedRectIndex = null;
-      }
-
-      this.$bus_unique.emit("updateCurrentToolModel", newValue);
-    },
+    // currentToolModel(newValue, oldValue) {
+    //   console.error("currentToolModel", newValue);
+    //   if (newValue !== "editRectShape") {
+    //     this.currentSelectedRectIndex = null;
+    //   }
+    //   this.$bus_unique.emit("updateCurrentToolModel", newValue);
+    // },
   },
   mounted() {
     this.init();
@@ -101,13 +128,27 @@ export default {
     this.$bus_unique.on("switchTool", "ruleTool", ({ model }) => {
       this.currentToolModel = model;
 
-      switch (model) {
-        case "drawRect":
-          console.info("切换到绘制矩形");
+      this.sideToolModel = model;
+      this.currentSelectedRectIndex = null;
+    });
 
+    // 监听：页面右上角的按钮栏事件
+    this.$bus_unique.on("rightTopBtnBarEvts", "ruleTool", (options) => {
+      console.info('options', options);
+
+      const {btnType, success} = options;
+
+      switch (btnType) { //getCreatedCoveringsInfo：获取已创建的覆盖物信息
+        case 'getCreatedCoveringsInfo':
+          success && success({
+            targetImg: this.targetImg,
+            rectList: this.createdRectObj.list
+          });
           break;
       }
     });
+
+    
 
     //测试操作
     this.$nextTick(() => {
@@ -117,9 +158,9 @@ export default {
           "https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=697983060,2693531260&fm=15&gp=0.jpg",
       });
 
-      this.$bus_unique.emit("switchTool", {
-        model: "drawRect",
-      });
+      // this.$bus_unique.emit("switchTool", {
+      //   model: "drawRect",
+      // });
     });
   },
   methods: {
@@ -251,7 +292,7 @@ export default {
               thisOperatePointer,
             } = _rectObj_editShape;
 
-            if (!isOperating) {
+            if (!isOperating || !thisOperatePointer) {
               return false;
             }
 
@@ -370,12 +411,16 @@ export default {
           },
           onMouseUp: () => {
             _rectObj_editShape.isOperating = false;
-            this.currentToolModel = null;
           },
         },
         //移动矩形
         moveRect: {
           onMouseDown: ($event, thisRect) => {
+            
+            if (!thisRect) {
+              return false;
+            }
+
             const targetImg = this.targetImg;
 
             _rectObj_move = {
@@ -435,9 +480,10 @@ export default {
           },
           onMouseUp: () => {
             _rectObj_move.isMoving = false;
-            this.currentToolModel = null;
           },
         },
+        //删除矩形：
+        // deleteCover: {},
       };
 
       return toolEvts;
@@ -486,7 +532,12 @@ export default {
         const currentToolModel = this.currentToolModel;
         const currentTool = this.toolEvts[currentToolModel];
 
-        if (!currentToolModel || !targetImg || !targetImg.coords) {
+        if (
+          !currentToolModel ||
+          !targetImg ||
+          !targetImg.coords ||
+          !currentTool
+        ) {
           return false;
         }
 
@@ -501,7 +552,7 @@ export default {
 
         //来到这里
         if (isInTargetImg === false) {
-          currentTool.onMouseUp($event);
+          currentTool.onMouseUp && currentTool.onMouseUp($event);
           return false;
         }
 
@@ -533,8 +584,19 @@ export default {
       console.info("thisIndex", thisIndex);
       console.info("选中", $event);
 
+      const sideToolModel = this.sideToolModel;
       this.currentSelectedRectIndex = thisIndex;
-      this.toolEvts.moveRect.onMouseDown($event, thisRect, thisIndex);
+
+      switch (
+        sideToolModel //moveCover：移动覆盖物 adjustCoverShape：调整覆盖物形状
+      ) {
+        case "moveCover":
+          this.toolEvts.moveRect.onMouseDown($event, thisRect, thisIndex);
+          break;
+        case "adjustCoverShape":
+          this.currentToolModel = "editRectShape";
+          break;
+      }
     },
 
     //选中矩形框的操作点
@@ -544,6 +606,12 @@ export default {
         thisRect,
         thisOperatePointer
       );
+    },
+
+    //删除当前这个矩形
+    handleDeleteThisRect(rectList, toBeDeleteRectIndex) {
+      rectList.splice(toBeDeleteRectIndex, 1);
+      this.currentSelectedRectIndex = null;
     },
 
     //转化图片的尺寸
@@ -749,6 +817,37 @@ export default {
         top: 50%;
         transform: translate3d(-50%, -50%, 0);
       }
+    }
+  }
+
+  //删除按钮
+  .delete-btn {
+    right: 0;
+    top: 0;
+    transform: translate3d(50%, -50%, 0) rotate(45deg);
+    width: 24px;
+    height: 24px;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    background-color: #333;
+
+    &::before,
+    &::after {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      content: "";
+      display: block;
+      width: 60%;
+      height: 2px;
+      background-color: #fff;
+    }
+
+    &::after {
+      transform: rotate(90deg);
     }
   }
 

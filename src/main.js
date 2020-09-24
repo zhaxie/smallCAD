@@ -17,7 +17,9 @@ Vue.config.productionTip = false
 Vue.prototype.$storeCAD = CAD;
 
 Vue.prototype.$toast = ({ msg }) => {
-  alert(msg);
+  // alert(msg);
+
+  console.error('$toast -msg 错误提示', msg);
 }
 
 
