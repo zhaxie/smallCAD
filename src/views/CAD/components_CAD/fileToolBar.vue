@@ -82,8 +82,8 @@ export default {
           const { x, y } = targetImg; //目标图像的坐标;
 
           rectList.forEach((item) => {
-            item.x_keepTargetImg = item.left - x; //该矩形相对于目标图像的左边距
-            item.y_keepTargetImg = item.top - y;  //该矩形相对于目标图像的上边距
+            item.x_keepTargetImg = (item.left - x).toFixed(0); //该矩形相对于目标图像的左边距
+            item.y_keepTargetImg = (item.top - y).toFixed(0);  //该矩形相对于目标图像的上边距
           }); 
 
           console.info('最终的矩形坐标信息：x y width height', rectList);

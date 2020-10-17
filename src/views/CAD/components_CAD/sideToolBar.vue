@@ -7,6 +7,7 @@
         v-for="(item, index) in sideToolList"
         :key="'sideToolList' + index"
         :class="{active: item.model === currentToolModel, [item.icon]: item.icon}"
+        :title="item.hoverTitle"
         @click="handleSwitchTool(item)"
       ></div>
     </div>
@@ -22,14 +23,22 @@ export default {
         {
           model: "drawRect", //绘制矩形
           icon: "icon-rect",
+          hoverTitle: '框选区域'
         },
         {
           model: "adjustCoverShape", //调整覆盖物形状
           icon: "icon-suofang",
+          hoverTitle: '调整矩形形状'
         },
         {
           model: "moveCover", //移动覆盖物
           icon: "icon-move",
+          hoverTitle: '移动矩形'
+        },
+        {
+          model: "bindRelatedInfo", //绑定关联信息（给绘制出来的矩形局域加上关联信息）
+          icon: "icon-bind", 
+          hoverTitle: '绑定关联信息'
         },
       ],
     };

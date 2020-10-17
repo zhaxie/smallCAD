@@ -69,11 +69,19 @@
         />
       </div>
     </template>
+
+    <bindRelatedInfoDialog ref="bindRelatedInfoDialog" />
   </div>
 </template>
 
+
 <script>
+import bindRelatedInfoDialog from "@/views/CAD/components_CAD/bindRelatedInfoDialog.vue";
+
 export default {
+  components: {
+    bindRelatedInfoDialog,
+  },
   data() {
     return {
       //绘图：矩形
@@ -87,15 +95,6 @@ export default {
       operatePointerList: [],
       currentToolModel: null,
     };
-  },
-  watch: {
-    // currentToolModel(newValue, oldValue) {
-    //   console.error("currentToolModel", newValue);
-    //   if (newValue !== "editRectShape") {
-    //     this.currentSelectedRectIndex = null;
-    //   }
-    //   this.$bus_unique.emit("updateCurrentToolModel", newValue);
-    // },
   },
   mounted() {
     this.init();
@@ -134,21 +133,22 @@ export default {
 
     // 监听：页面右上角的按钮栏事件
     this.$bus_unique.on("rightTopBtnBarEvts", "ruleTool", (options) => {
-      console.info('options', options);
+      console.info("options", options);
 
-      const {btnType, success} = options;
+      const { btnType, success } = options;
 
-      switch (btnType) { //getCreatedCoveringsInfo：获取已创建的覆盖物信息
-        case 'getCreatedCoveringsInfo':
-          success && success({
-            targetImg: this.targetImg,
-            rectList: this.createdRectObj.list
-          });
+      switch (
+        btnType //getCreatedCoveringsInfo：获取已创建的覆盖物信息
+      ) {
+        case "getCreatedCoveringsInfo":
+          success &&
+            success({
+              targetImg: this.targetImg,
+              rectList: this.createdRectObj.list,
+            });
           break;
       }
     });
-
-    
 
     //测试操作
     this.$nextTick(() => {
@@ -416,7 +416,6 @@ export default {
         //移动矩形
         moveRect: {
           onMouseDown: ($event, thisRect) => {
-            
             if (!thisRect) {
               return false;
             }
@@ -482,8 +481,19 @@ export default {
             _rectObj_move.isMoving = false;
           },
         },
-        //删除矩形：
-        // deleteCover: {},
+        //绑定信息
+        bindRelatedInfo: {
+          onMouseDown: ($event, thisRect) => {
+            console.info("$event", $event);
+            console.info("thisRect", thisRect);
+
+            this.$refs.bindRelatedInfoDialog.render({
+              success: (getRet) => {
+                console.info('获取弹窗结果', getRet);
+              }
+            })
+          },
+        },
       };
 
       return toolEvts;
@@ -547,30 +557,27 @@ export default {
           targetImg.coords
         );
 
-        // console.info("$event", $event);
-        // console.info("isInTargetImg", isInTargetImg);
+        const { 
+          onMouseDown, 
+          onMouseMove, 
+          onMouseUp 
+        } = currentTool;
 
-        //来到这里
         if (isInTargetImg === false) {
-          currentTool.onMouseUp && currentTool.onMouseUp($event);
+          onMouseUp && onMouseUp($event);
           return false;
         }
 
-        // 测试
-
-        // if (evtName === "mouseMove") {
-        //   return false;
-        // }
 
         switch (evtName) {
           case "mouseDown":
-            currentTool.onMouseDown($event);
+            onMouseDown && onMouseDown($event);
             break;
           case "mouseMove":
-            currentTool.onMouseMove($event);
+            onMouseMove && onMouseMove($event);
             break;
           case "mouseUp":
-            currentTool.onMouseUp($event);
+            onMouseUp && onMouseUp($event);
             break;
         }
       } catch (error) {
@@ -595,6 +602,14 @@ export default {
           break;
         case "adjustCoverShape":
           this.currentToolModel = "editRectShape";
+          break;
+        case "bindRelatedInfo":
+          this.currentToolModel = "bindRelatedInfo";
+          this.toolEvts.bindRelatedInfo.onMouseDown(
+            $event,
+            thisRect,
+            thisIndex
+          );
           break;
       }
     },

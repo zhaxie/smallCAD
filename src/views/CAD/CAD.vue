@@ -7,10 +7,8 @@
         <!-- 侧边工具栏 -->
         <sideToolBar></sideToolBar>
         <div class="col d-flex flex-column">
-          <!-- 已打开的文件 -->
-          <!-- <openedFileBar></openedFileBar> -->
-          <!-- 标尺工具 -->
-          <ruleTool class="col" ></ruleTool>
+          <!-- 主画板区域 -->
+          <mainCavans class="col" ></mainCavans>
         </div>
       </div>
     </div>
@@ -21,14 +19,14 @@
 import fileToolBar from "@/views/CAD/components_CAD/fileToolBar.vue";
 import sideToolBar from "@/views/CAD/components_CAD/sideToolBar.vue";
 import openedFileBar from "@/views/CAD/components_CAD/openedFileBar.vue";
-import ruleTool from "@/views/CAD/components_CAD/ruleTool.vue";
+import mainCavans from "@/views/CAD/components_CAD/mainCavans.vue";
 
 export default {
   components: {
     fileToolBar,
     sideToolBar,
     openedFileBar,
-    ruleTool,
+    mainCavans,
   },
   computed: {
     count() {
@@ -43,10 +41,5 @@ html,
 body,
 #app {
   height: 100%;
-}
-</style>
-
-<style lang="scss" scoped>
-.main-content {
 }
 </style>
