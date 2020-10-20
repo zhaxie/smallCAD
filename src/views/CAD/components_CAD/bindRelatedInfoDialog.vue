@@ -5,11 +5,17 @@
     width="30%"
     :before-close="handleClose"
   >
-    <span>这是一段信息</span>
-    <span slot="footer" class="dialog-footer">
-      <el-button @click="dialogVisible = false">取 消</el-button>
-      <el-button type="primary" @click="handleComfirm()">确 定</el-button>
-    </span>
+    <div 
+      @mousedown.stop="" 
+      @mousemove.stop="" 
+      @mouseup.stop=""
+    >
+      <span>这是一段信息</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="handleComfirm()">确 定</el-button>
+      </span>
+    </div>
   </el-dialog>
 </template>
 
@@ -37,7 +43,7 @@ export default {
     handleComfirm() {
       this.dialogVisible = false;
       const { success } = this.initOptions;
-      const testRet = '测试结果';
+      const testRet = "绑定后的的回调结果";
 
       success && success(testRet);
     },

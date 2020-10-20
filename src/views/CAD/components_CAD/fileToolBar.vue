@@ -88,13 +88,14 @@ export default {
               top: ((item.top - y) / height) * 100 + "%",
               width: (item.width / width) * 100 + "%",
               height: (item.height / height) * 100 + "%",
+              bindedInfo: item.bindedInfo,
             };
           });
 
           console.info("目标图像信息：", JSON.stringify(targetImg));
           console.info(
             "最终的矩形坐标信息：x y width height：",
-            JSON.stringify(rectList_afterTrans)
+            rectList_afterTrans
           );
         },
       });

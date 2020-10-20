@@ -70,7 +70,10 @@
       </div>
     </template>
 
-    <bindRelatedInfoDialog ref="bindRelatedInfoDialog" />
+    <!-- 绑定关联信息 -->
+    <div @mousedown.stop="" @mousemove.stop="" @mouseup.stop="">
+      <bindRelatedInfoDialog ref="bindRelatedInfoDialog" />
+    </div>
   </div>
 </template>
 
@@ -482,6 +485,7 @@ export default {
             _rectObj_move.isMoving = false;
           },
         },
+
         //绑定信息
         bindRelatedInfo: {
           onMouseDown: ($event, thisRect) => {
@@ -490,6 +494,8 @@ export default {
 
             this.$refs.bindRelatedInfoDialog.render({
               success: (getRet) => {
+
+                thisRect.bindedInfo = getRet;
                 console.info("获取弹窗结果", getRet);
               },
             });
