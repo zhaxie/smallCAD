@@ -79,14 +79,23 @@ export default {
         btnType: "getCreatedCoveringsInfo",
         success: (options) => {
           const { targetImg, rectList } = options;
-          const { x, y } = targetImg; //目标图像的坐标;
+          const { x, y, width, height } = targetImg; //目标图像的坐标;
 
-          rectList.forEach((item) => {
-            item.x_keepTargetImg = (item.left - x).toFixed(0); //该矩形相对于目标图像的左边距
-            item.y_keepTargetImg = (item.top - y).toFixed(0);  //该矩形相对于目标图像的上边距
-          }); 
+          //矩形与目标图像的 相对定位/相对尺寸
+          const rectList_afterTrans = rectList.map((item) => {
+            return {
+              left: ((item.left - x) / width) * 100 + "%",
+              top: ((item.top - y) / height) * 100 + "%",
+              width: (item.width / width) * 100 + "%",
+              height: (item.height / height) * 100 + "%",
+            };
+          });
 
-          console.info('最终的矩形坐标信息：x y width height', rectList);
+          console.info("目标图像信息：", JSON.stringify(targetImg));
+          console.info(
+            "最终的矩形坐标信息：x y width height：",
+            JSON.stringify(rectList_afterTrans)
+          );
         },
       });
     },

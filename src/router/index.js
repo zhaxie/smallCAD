@@ -8,11 +8,13 @@ Vue.use(VueRouter)
   {
     path: '/',
     name: 'CAD',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
     component: () => import('@/views/CAD/CAD.vue')
-  }
+  },
+  {
+    path: '/imgWithCovers',
+    name: 'imgWithCovers',
+    component: () => import('@/views/CAD/imgWithCovers.vue')
+  },
 ]
 
 const router = new VueRouter({

@@ -150,18 +150,18 @@ export default {
       }
     });
 
-    //测试操作
-    // this.$nextTick(() => {
-    //   this.$bus_unique.emit("choosedLocalImage", {
-    //     name: "测试图片",
-    //     url:
-    //       "https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=697983060,2693531260&fm=15&gp=0.jpg",
-    //   });
+    // 测试操作
+    this.$nextTick(() => {
+      this.$bus_unique.emit("choosedLocalImage", {
+        name: "测试图片",
+        url:
+          "https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1603191292676&di=37e18b62512e71ca6645792851b3d426&imgtype=0&src=http%3A%2F%2Fpic1.win4000.com%2Fwallpaper%2F6%2F577dff88921e2.jpg",
+      });
 
-    //   // this.$bus_unique.emit("switchTool", {
-    //   //   model: "drawRect",
-    //   // });
-    // });
+      // this.$bus_unique.emit("switchTool", {
+      //   model: "drawRect",
+      // });
+    });
   },
   methods: {
     async init() {
@@ -172,6 +172,7 @@ export default {
       const initInfo = (this.initInfo = {
         contentClient,
       });
+
       this.toolEvts = this.getToolEvts(initInfo); //获取工具栏事件
       this.operatePointerList = this.getRectOperatePointerList(); //获取矩形操作点列表（伸缩变形等）
     },
@@ -235,7 +236,7 @@ export default {
               height: pageY - mouseDown_y,
             };
 
-            console.info("$event", $event.offsetX);
+            // console.info("$event", $event.offsetX);
 
             if (axisObj.width < 0 && axisObj.height < 0) {
               moveDirection = "左上";
@@ -263,7 +264,7 @@ export default {
               _rectObj_create.currentRect.height = pageY - mouseDown_y;
             }
 
-            console.info("moveDirection", moveDirection);
+            // console.info("moveDirection", moveDirection);
           },
           onMouseUp: ($event) => {
             // console.info("绘图结束", $event);
@@ -489,9 +490,9 @@ export default {
 
             this.$refs.bindRelatedInfoDialog.render({
               success: (getRet) => {
-                console.info('获取弹窗结果', getRet);
-              }
-            })
+                console.info("获取弹窗结果", getRet);
+              },
+            });
           },
         },
       };
@@ -557,17 +558,12 @@ export default {
           targetImg.coords
         );
 
-        const { 
-          onMouseDown, 
-          onMouseMove, 
-          onMouseUp 
-        } = currentTool;
+        const { onMouseDown, onMouseMove, onMouseUp } = currentTool;
 
         if (isInTargetImg === false) {
           onMouseUp && onMouseUp($event);
           return false;
         }
-
 
         switch (evtName) {
           case "mouseDown":
@@ -669,8 +665,6 @@ export default {
                   width: maxSize.width,
                   height: maxSize.width / sizeRatio,
                 };
-              } else {
-                scaleRatio = 1;
               }
             } else if (sizeRatio === 1) {
               console.info("比例：", "正方形");
@@ -680,8 +674,6 @@ export default {
                   width: maxSize.width,
                   height: maxSize.width,
                 };
-              } else {
-                scaleRatio = 1;
               }
             } else {
               console.info("比例：", "高大于宽");
@@ -691,15 +683,15 @@ export default {
                   width: maxSize.height * sizeRatio,
                   height: maxSize.height,
                 };
-              } else {
-                scaleRatio = 1;
               }
             }
 
             aferTransImg.sizeRatio = sizeRatio; //宽高尺寸比率
-            aferTransImg.scaleRatio = scaleRatio; //转换后的图片与转换钱的缩放比
+            aferTransImg.scaleRatio = imgWidth / aferTransImg.width; //图片的缩放比例
             aferTransImg.url = choosedImg.url;
             aferTransImg.imgEle = newImgEle;
+            aferTransImg.real_width = imgWidth; //图片的原宽度
+            aferTransImg.real_height = imgHeight; //图片的原高度
 
             console.info("aferTransImg", aferTransImg);
 
