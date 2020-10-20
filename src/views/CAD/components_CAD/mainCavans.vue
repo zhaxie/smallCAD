@@ -151,17 +151,17 @@ export default {
     });
 
     //测试操作
-    this.$nextTick(() => {
-      this.$bus_unique.emit("choosedLocalImage", {
-        name: "测试图片",
-        url:
-          "https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=697983060,2693531260&fm=15&gp=0.jpg",
-      });
+    // this.$nextTick(() => {
+    //   this.$bus_unique.emit("choosedLocalImage", {
+    //     name: "测试图片",
+    //     url:
+    //       "https://ss0.bdstatic.com/70cFuHSh_Q1YnxGkpoWK1HF6hhy/it/u=697983060,2693531260&fm=15&gp=0.jpg",
+    //   });
 
-      // this.$bus_unique.emit("switchTool", {
-      //   model: "drawRect",
-      // });
-    });
+    //   // this.$bus_unique.emit("switchTool", {
+    //   //   model: "drawRect",
+    //   // });
+    // });
   },
   methods: {
     async init() {
