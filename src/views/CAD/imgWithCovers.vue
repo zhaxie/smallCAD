@@ -1,7 +1,7 @@
 <!--
  * @Date         : 2020-10-20 15:15:49
  * @LastEditors  : cxx
- * @LastEditTime : 2021-01-22 13:48:36
+ * @LastEditTime : 2021-01-22 13:53:54
  * @FilePath     : \small_cad\src\views\CAD\imgWithCovers.vue
 -->
 <template>
@@ -22,6 +22,7 @@
     </div>
   </div>
 </template>
+
 
 
 <script>
