@@ -1,3 +1,9 @@
+<!--
+ * @Date         : 2020-10-20 15:15:49
+ * @LastEditors  : cxx
+ * @LastEditTime : 2021-01-22 13:48:36
+ * @FilePath     : \small_cad\src\views\CAD\imgWithCovers.vue
+-->
 <template>
   <div class="target-img-box" ref="targetImgBox">
     <div class="position-relative d-inline-block">
@@ -16,6 +22,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 export default {
