@@ -1,7 +1,7 @@
 <!--
  * @Date         : 2020-10-20 15:15:49
  * @LastEditors  : cxx
- * @LastEditTime : 2021-01-22 14:47:19
+ * @LastEditTime : 2021-01-22 14:52:04
  * @FilePath     : \small_cad\src\views\CAD\imgWithCovers.vue
 -->
 <template>
@@ -23,13 +23,13 @@
   </div>
 </template>
 
-
 <script>
 export default {
   data() {
     return {
       coverList: [],
       targetImg: "",
+      
     };
   },
   mounted() {
